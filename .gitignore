@@ -1,0 +1,4 @@
+.vscode/
+back/build/
+.env.local
+deploy.sh

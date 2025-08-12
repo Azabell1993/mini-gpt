@@ -1,0 +1,195 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Transformer Viewer (Front)</title>
+  <link rel="stylesheet" href="./styles.css"/>
+  <script defer src="./app.js"></script>
+</head>
+<body>
+<header>
+  <h1>Transformer 구조 인터랙티브 뷰어</h1>
+  <p>GPT 스타일 Decoder-only Transformer의 핵심 구조를 시각화합니다.</p>
+  <p>슬라이더로 하이퍼파라미터를 조절하면 SVG 다이어그램과 주석이 갱신됩니다.</p>
+  <div class="intro-box">
+    <h3>이 페이지는 무엇인가요?</h3>
+    <p>GPT (Generative Pre-trained Transformer) 아키텍처의 핵심 구성 요소들을 인터랙티브하게 탐색할 수 있는 교육용 도구입니다. 
+    각 레이어의 역할과 데이터 흐름을 이해하고, 하이퍼파라미터 변화에 따른 모델 구조의 변화를 실시간으로 확인할 수 있습니다.</p>
+  </div>
+</header>
+
+<section class="controls">
+  <div class="control-group">
+    <label>seq_len L: <input id="seq" type="range" min="4" max="64" value="16"><span id="seq_val">16</span></label>
+    <div class="control-desc">시퀀스 길이 - 한 번에 처리할 토큰의 최대 개수</div>
+  </div>
+  <div class="control-group">
+    <label>d_model d: <input id="dmodel" type="range" min="64" max="1024" step="64" value="256"><span id="d_val">256</span></label>
+    <div class="control-desc">모델 차원 - 임베딩 벡터와 hidden state의 크기</div>
+  </div>
+  <div class="control-group">
+    <label>n_layers N: <input id="layers" type="range" min="1" max="24" value="4"><span id="n_val">4</span></label>
+    <div class="control-desc">레이어 수 - Transformer 블록의 반복 횟수</div>
+  </div>
+  <div class="control-group">
+    <label>n_heads h: <input id="heads" type="range" min="1" max="16" value="4"><span id="h_val">4</span></label>
+    <div class="control-desc">어텐션 헤드 수 - 병렬로 처리하는 어텐션의 개수</div>
+  </div>
+</section>
+
+<section class="legend">
+  <h2>설명</h2>
+  <ul>
+    <li><strong>Pre-LN</strong>: 각 서브층 입력에 LayerNorm 적용</li>
+    <li><strong>Causal mask</strong>: 미래 토큰 차단 (상삼각 −∞)</li>
+    <li><strong>FFN</strong>: d→4d→d, 활성화는 GELU</li>
+    <li><strong>Dropout</strong>: embedding/attention/residual만 (기본 0.1)</li>
+    <li><strong>Proj(d→V)</strong>: 최종 linear layer로 d_model을 어휘 크기 V로 변환</li>
+    <li><strong>Softmax</strong>: 로짓을 확률 분포로 변환하여 다음 토큰 예측</li>
+  </ul>
+</section>
+
+<section class="stage">
+  <!-- Minimal, standards-aligned GPT-style (Decoder-only, Pre-LN) block diagram -->
+  <svg id="diagram" viewBox="0 0 1400 560" xmlns="http://www.w3.org/2000/svg" aria-label="GPT-style Transformer diagram">
+    <defs>
+      <linearGradient id="g1" x1="0" x2="1">
+        <stop offset="0%" stop-color="#eef"/>
+        <stop offset="100%" stop-color="#dde"/>
+      </linearGradient>
+      <linearGradient id="g2" x1="0" x2="1">
+        <stop offset="0%" stop-color="#efe"/>
+        <stop offset="100%" stop-color="#ded"/>
+      </linearGradient>
+      <style>
+        .box{fill:url(#g1);stroke:#333;stroke-width:1.2}
+        .box2{fill:url(#g2);stroke:#333;stroke-width:1.2}
+        .label{font-family:ui-sans-serif,system-ui,Segoe UI,Apple SD Gothic Neo,sans-serif;font-size:13px}
+        .small{font-size:11px;fill:#333}
+        .arrow{marker-end:url(#m1);stroke:#444;stroke-width:1.5}
+        .pulse{animation:pulse 1.2s infinite}
+        @keyframes pulse {0%{opacity:0.5}50%{opacity:1}100%{opacity:0.5}}
+      </style>
+      <marker id="m1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+        <path d="M 0 0 L 10 5 L 0 10 z" fill="#444"/>
+      </marker>
+    </defs>
+
+    <!-- Input -->
+    <rect x="20" y="30" width="180" height="60" class="box"/>
+    <text x="30" y="55" class="label">입력 텍스트 → 토큰화</text>
+    <text x="30" y="75" class="small" style="fill:#666; font-style:italic;">→ Tokenization</text>
+    <line x1="200" y1="60" x2="260" y2="60" class="arrow"/>
+
+    <!-- Emb + Pos -->
+    <rect x="260" y="20" width="220" height="80" rx="8" class="box2" id="embbox"/>
+    <text x="270" y="45" class="label">토큰 임베딩 + 위치 임베딩</text>
+    <text x="270" y="65" class="small" id="shape1">(L × d)</text>
+    <text x="270" y="85" class="small" style="fill:#666; font-style:italic;">→ Position Encoding 공식</text>
+    <line x1="480" y1="60" x2="540" y2="60" class="arrow"/>
+
+    <!-- Blocks container -->
+    <rect x="540" y="10" width="520" height="400" rx="10" class="box"/>
+    <text x="550" y="35" class="label">Transformer Blocks (Decoder-only, Pre-LN)</text>
+    <text x="550" y="53" class="small" id="layers_txt">N=4</text>
+
+    <!-- One block schematic -->
+    <rect x="560" y="70" width="480" height="150" rx="8" class="box2"/>
+    <text x="570" y="90" class="label">[LN] → [Multi-Head Self-Attention (causal)] → Residual</text>
+    <text x="570" y="110" class="small" id="mh_txt">h=4, d_h=d/h</text>
+    <text x="570" y="128" class="small">Scaled Dot-Product: softmax(QK^T / √d_h) V</text>
+    <text x="570" y="146" class="small">Mask: upper-triangular −∞ to block future</text>
+    <text x="570" y="164" class="small" style="fill:#0066cc; font-weight:bold;">→ Multi-Head Self-Attention 공식</text>
+    <text x="570" y="200" class="small" style="opacity:0.5;">(이 블록이 N번 반복)</text>
+
+    <rect x="560" y="240" width="480" height="130" rx="8" class="box2"/>
+    <text x="570" y="260" class="label">[LN] → [FFN: d→4d→d, GELU] → Residual</text>
+    <text x="570" y="278" class="small">No FFN dropout (GPT); residual/emb/attn dropout only</text>
+    <text x="570" y="296" class="small" style="fill:#0066cc; font-weight:bold;">→ Feed-Forward Network + Layer Normalization 공식</text>
+
+    <!-- Final LN & Head -->
+    <line x1="800" y1="410" x2="800" y2="450" class="arrow"/>
+    <rect x="700" y="450" width="200" height="60" rx="8" class="box"/>
+    <text x="710" y="475" class="label">최종 LayerNorm</text>
+    <text x="710" y="495" class="small" style="fill:#0066cc; font-weight:bold;">→ Layer Normalization</text>
+    <line x1="900" y1="480" x2="970" y2="480" class="arrow"/>
+    <rect x="970" y="450" width="200" height="60" rx="8" class="box"/>
+    <text x="980" y="470" class="label">Proj(d→V):</text>
+    <text x="980" y="485" class="label">Linear(d→vocab)</text>
+    <text x="980" y="505" class="small" style="fill:#0066cc; font-weight:bold;">→ Output Projection</text>
+    <line x1="1170" y1="480" x2="1210" y2="480" class="arrow"/>
+    <rect x="1210" y="450" width="120" height="60" rx="8" class="box"/>
+    <text x="1220" y="475" class="label">Softmax</text>
+    <text x="1220" y="495" class="small" style="fill:#0066cc; font-weight:bold;">→ Output Projection</text>
+
+    <!-- Flow highlight -->
+    <circle id="pulseDot" cx="250" cy="60" r="6" fill="#f66" class="pulse" aria-hidden="true"/>
+  </svg>
+</section>
+
+
+
+<section class="math-formulas">
+  <h2>핵심 수학 공식</h2>
+  
+  <div class="formula-group">
+    <h3>Position Encoding</h3>
+    <div class="formula">
+      <strong>PE(pos, 2i)</strong> = <span class="func">sin</span>(<span class="var">pos</span> / <span class="const">10000</span><sup>(<span class="const">2i</span>/<span class="var">d_model</span>)</sup>)
+    </div>
+    <div class="formula">
+      <strong>PE(pos, 2i+1)</strong> = <span class="func">cos</span>(<span class="var">pos</span> / <span class="const">10000</span><sup>(<span class="const">2i</span>/<span class="var">d_model</span>)</sup>)
+    </div>
+    <p class="formula-desc">절대 위치 정보를 주파수 기반으로 인코딩</p>
+  </div>
+
+  <div class="formula-group">
+    <h3>Multi-Head Self-Attention</h3>
+    <div class="formula">
+      <strong>Attention(Q, K, V)</strong> = <span class="func">softmax</span>(<span class="var">QK</span><sup>T</sup> / <span class="const">√d_k</span>) <span class="var">V</span>
+    </div>
+    <div class="formula">
+      <strong>MultiHead(Q, K, V)</strong> = <span class="func">Concat</span>(<span class="var">head₁</span>, ..., <span class="var">head_h</span>) <span class="var">W</span><sup>O</sup>
+    </div>
+    <div class="formula">
+      where <span class="var">head_i</span> = <span class="func">Attention</span>(<span class="var">QW_i</span><sup>Q</sup>, <span class="var">KW_i</span><sup>K</sup>, <span class="var">VW_i</span><sup>V</sup>)
+    </div>
+    <p class="formula-desc">각 헤드는 d_k = d_model / h 차원에서 독립적으로 attention을 계산</p>
+  </div>
+
+  <div class="formula-group">
+    <h3>Feed-Forward Network</h3>
+    <div class="formula">
+      <strong>FFN(x)</strong> = <span class="func">max</span>(<span class="const">0</span>, <span class="var">x</span><span class="var">W₁</span> + <span class="var">b₁</span>)<span class="var">W₂</span> + <span class="var">b₂</span>
+    </div>
+    <div class="formula">
+      <strong>GELU(x)</strong> = <span class="var">x</span> · <span class="func">Φ(x)</span> ≈ <span class="const">0.5</span><span class="var">x</span>(<span class="const">1</span> + <span class="func">tanh</span>(<span class="func">√</span>(<span class="const">2/π</span>)(<span class="var">x</span> + <span class="const">0.044715</span><span class="var">x³</span>)))
+    </div>
+    <p class="formula-desc">FFN에서 d_model → 4·d_model → d_model 변환, GELU 활성화 함수 사용</p>
+  </div>
+
+
+  <div class="formula-group">
+    <h3>Layer Normalization</h3>
+    <div class="formula">
+      <strong>LN(x)</strong> = <span class="var">γ</span> · (<span class="var">x</span> - <span class="var">μ</span>) / <span class="func">√</span>(<span class="var">σ²</span> + <span class="const">ε</span>) + <span class="var">β</span>
+    </div>
+    <p class="formula-desc">각 레이어 입력을 정규화하여 학습 안정성 향상 (Pre-LN 구조)</p>
+  </div>
+
+  <div class="formula-group">
+    <h3>Output Projection</h3>
+    <div class="formula">
+      <strong>logits</strong> = <span class="var">x_final</span> · <span class="var">W_proj</span> + <span class="var">b_proj</span>
+    </div>
+    <div class="formula">
+      <strong>P(next_token)</strong> = <span class="func">softmax</span>(<span class="var">logits</span>)
+    </div>
+    <p class="formula-desc">최종 hidden state를 vocabulary 크기로 투영하여 다음 토큰 확률 계산</p>
+  </div>
+</section>
+
+<footer>© 2025 Minimal GPT Paper Skeleton</footer>
+</body>
+</html>
