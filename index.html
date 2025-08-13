@@ -6761,6 +6761,34 @@ int main() {
 </main>
 
 <style>
+  /* ...기존 스타일... */
+  .kakao-inquiry-email-group {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 8px;
+  }
+  .kakao-inquiry-email-group input {
+    flex: 1 1 0;
+    min-width: 0;
+  }
+  .kakao-inquiry-email-group .at {
+    align-self: center;
+    font-weight: 700;
+    color: #64748b;
+    padding: 0 4px;
+  }
+  .kakao-inquiry-email-group select, .kakao-inquiry-email-group input[type=text].email-domain {
+    width: 110px;
+    min-width: 80px;
+    font-size: 1em;
+    border-radius: 7px;
+    border: 1px solid #e2e8f0;
+    background: #f8fafc;
+    padding: 10px 6px;
+  }
+  .kakao-inquiry-email-group input[type=text].email-domain {
+    display: none;
+  }
   .kakao-inquiry-draggable {
     position: fixed;
     left: 40px;
@@ -6929,12 +6957,26 @@ int main() {
     <div class="kakao-inquiry-messages disabled" id="kakaoChatMessages"></div>
     <div class="kakao-inquiry-inputs">
       <input type="text" id="kakaoNameInput" placeholder="이름 (필수)" autocomplete="off" />
-      <input type="email" id="kakaoEmailInput" placeholder="이메일 (선택)" autocomplete="off" />
+      <div class="kakao-inquiry-email-group">
+        <input type="text" id="kakaoEmailIdInput" placeholder="이메일 아이디" autocomplete="off" />
+        <span class="at">@</span>
+        <select id="kakaoEmailDomainSelect">
+          <option value="naver.com">naver.com</option>
+          <option value="gmail.com">gmail.com</option>
+          <option value="kakao.com">kakao.com</option>
+          <option value="daum.net">daum.net</option>
+          <option value="hanmail.net">hanmail.net</option>
+          <option value="hotmail.com">hotmail.com</option>
+          <option value="outlook.com">outlook.com</option>
+          <option value="other">기타</option>
+        </select>
+        <input type="text" id="kakaoEmailDomainInput" class="email-domain" placeholder="도메인 직접입력" autocomplete="off" />
+      </div>
       <input type="text" id="kakaoPhoneInput" placeholder="핸드폰 번호 (선택)" autocomplete="off" maxlength="13" />
       <input type="text" id="kakaoChatInput" placeholder="문의 내용을 입력하세요..." autocomplete="off" />
       <button class="kakao-inquiry-btn" id="sendKakaoChatBtn" disabled>문의</button>
     </div>
-    <div class="kakao-inquiry-desc">이름은 필수, 이메일/핸드폰 중 하나는 반드시 입력해야 합니다.</div>
+    <div class="kakao-inquiry-desc">이름, 이메일은 필수, 핸드폰은 선택입니다.</div>
     <div class="kakao-inquiry-download"><button class="kakao-inquiry-download-btn" id="downloadKakaoInquiry">문의내역 다운로드</button></div>
   </div>
 </div>
@@ -6942,9 +6984,11 @@ int main() {
 <!-- JavaScript for interactive features -->
 <script src="scripts.js"></script>
 <script>
-// 문의 입력 활성화/비활성화
+// ...기존 변수 선언...
 const kakaoNameInput = document.getElementById('kakaoNameInput');
-const kakaoEmailInput = document.getElementById('kakaoEmailInput');
+const kakaoEmailIdInput = document.getElementById('kakaoEmailIdInput');
+const kakaoEmailDomainSelect = document.getElementById('kakaoEmailDomainSelect');
+const kakaoEmailDomainInput = document.getElementById('kakaoEmailDomainInput');
 const kakaoPhoneInput = document.getElementById('kakaoPhoneInput');
 const kakaoChatInput = document.getElementById('kakaoChatInput');
 const sendKakaoChatBtn = document.getElementById('sendKakaoChatBtn');
@@ -6956,20 +7000,43 @@ const minimizeBtn = document.getElementById('minimizeKakaoInquiry');
 const closeBtn = document.getElementById('closeKakaoInquiry');
 const downloadBtn = document.getElementById('downloadKakaoInquiry');
 
+kakaoEmailDomainSelect.addEventListener('change', function() {
+  if (this.value === 'other') {
+    kakaoEmailDomainInput.style.display = '';
+    kakaoEmailDomainInput.value = '';
+    kakaoEmailDomainInput.focus();
+  } else {
+    kakaoEmailDomainInput.style.display = 'none';
+    kakaoEmailDomainInput.value = '';
+  }
+  validateKakaoInputs();
+});
+kakaoEmailDomainInput.addEventListener('input', validateKakaoInputs);
+kakaoEmailIdInput.addEventListener('input', validateKakaoInputs);
+
+function getEmailValue() {
+  const id = kakaoEmailIdInput.value.trim();
+  let domain = kakaoEmailDomainSelect.value;
+  if (domain === 'other') domain = kakaoEmailDomainInput.value.trim();
+  return id && domain ? `${id}@${domain}` : '';
+}
+
 function validateKakaoInputs() {
   const name = kakaoNameInput.value.trim();
-  const email = kakaoEmailInput.value.trim();
+  const email = getEmailValue();
   const phone = kakaoPhoneInput.value.trim();
   const text = kakaoChatInput.value.trim();
-  let validEmail = !email || /^[\w.-]+@[\w.-]+\.[A-Za-z]{2,}$/.test(email);
+  let validEmail = /^[\w.-]+@[\w.-]+\.[A-Za-z]{2,}$/.test(email);
   let validPhone = !phone || /^01[016789]-\d{3,4}-\d{4}$/.test(phone);
-  sendKakaoChatBtn.disabled = !(name && (email || phone) && text && validEmail && validPhone);
-  kakaoEmailInput.style.borderColor = validEmail ? '' : '#ef4444';
+  sendKakaoChatBtn.disabled = !(name && email && text && validEmail && validPhone);
+  kakaoEmailIdInput.style.borderColor = validEmail ? '' : '#ef4444';
+  if (kakaoEmailDomainSelect.value === 'other') {
+    kakaoEmailDomainInput.style.borderColor = validEmail ? '' : '#ef4444';
+  }
   kakaoPhoneInput.style.borderColor = validPhone ? '' : '#ef4444';
 }
 
 kakaoNameInput.addEventListener('input', validateKakaoInputs);
-kakaoEmailInput.addEventListener('input', validateKakaoInputs);
 kakaoPhoneInput.addEventListener('input', validateKakaoInputs);
 kakaoChatInput.addEventListener('input', validateKakaoInputs);
 
@@ -7015,12 +7082,12 @@ async function getKakaoUid() {
 
 sendKakaoChatBtn.onclick = async function() {
   const name = kakaoNameInput.value.trim();
-  const email = kakaoEmailInput.value.trim();
+  const email = getEmailValue();
   const phone = kakaoPhoneInput.value.trim();
   const text = kakaoChatInput.value.trim();
   const info = [];
   info.push(`이름: ${name}`);
-  if (email) info.push(`이메일: ${email}`);
+  info.push(`이메일: ${email}`);
   if (phone) info.push(`핸드폰: ${phone}`);
   info.push(`문의: ${text}`);
   const msg = info.join('\n');
@@ -7042,7 +7109,10 @@ sendKakaoChatBtn.onclick = async function() {
   if (data.result === 'success') {
     appendKakaoMessage('카카오', '', 'success');
     kakaoNameInput.value = '';
-    kakaoEmailInput.value = '';
+    kakaoEmailIdInput.value = '';
+    kakaoEmailDomainSelect.value = 'naver.com';
+    kakaoEmailDomainInput.value = '';
+    kakaoEmailDomainInput.style.display = 'none';
     kakaoPhoneInput.value = '';
     kakaoChatInput.value = '';
     sendKakaoChatBtn.disabled = true;

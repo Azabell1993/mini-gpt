@@ -1,6 +1,8 @@
 <?php
 // 내 카카오톡으로 메시지 전송 (POST: message, GET: uid)
 header('Content-Type: application/json; charset=utf-8');
+require_once __DIR__ . '/config.php';
+require_once __DIR__ . '/inquiry_db.php';
 
 // uid 필수
 $userId = $_GET['uid'] ?? null;
@@ -31,7 +33,14 @@ $name = isset($input['name']) ? trim($input['name']) : '';
 $email = isset($input['email']) ? trim($input['email']) : '';
 $phone = isset($input['phone']) ? trim($input['phone']) : '';
 $msg = isset($input['message']) ? trim($input['message']) : '';
+$ip = get_client_ip();
 
+// 2분 딜레이 체크
+if (!can_send_inquiry($ip)) {
+    http_response_code(429);
+    echo json_encode(['error' => '2분 내 연속으로 문의를 보낼 수 없습니다.']);
+    exit;
+}
 if (!$name) {
     http_response_code(400);
     echo json_encode(['error' => '이름을 입력하세요.']);
@@ -47,6 +56,8 @@ if (!$msg) {
     echo json_encode(['error' => '문의 내용을 입력하세요.']);
     exit;
 }
+// 문의 DB 저장
+save_inquiry($name, $email, $phone, $msg, $ip);
 
 $info = [];
 $info[] = "이름: $name";

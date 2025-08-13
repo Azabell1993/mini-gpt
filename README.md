@@ -1,7 +1,5 @@
 # mini-gpt: C++ 기반 GPT(Decoder-only, Pre-LN) 최소 구현
 
-> 본 README는 `web/index.html`의 본문과 동일한 내용을 텍스트로 제공합니다.
-
 ## 프로젝트 개요
 
 - **목표:** 논문 수준의 GPT(Decoder-only, Pre-LN) 아키텍처를 C++로 완전하게 구현하고, 수식/코드/이론을 1:1로 매핑하여 누구나 재현·확장할 수 있도록 공개합니다.

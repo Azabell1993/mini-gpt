@@ -17,5 +17,6 @@ build.sh
 // C++언어 바이너리
 *.out
 
+api/mysql.php
 // Makefile cache
 Makefile.cache
