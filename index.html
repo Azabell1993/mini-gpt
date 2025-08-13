@@ -7051,8 +7051,12 @@ kakaoPhoneInput.addEventListener('input', function(e) {
   }
 });
 
-// 메시지 박스 초기 비활성화
-kakaoChatMessages.classList.add('disabled');
+// 문의 메시지 박스에 안내문구 표시
+function setKakaoMessagePlaceholder() {
+  kakaoChatMessages.innerHTML = '<div style="color:#94a3b8; text-align:center; padding:24px 0; font-size:1.07em;">문의 내역이 여기에 표시됩니다.<br>문의 전에는 아무 내용도 없습니다.</div>';
+  kakaoChatMessages.classList.add('disabled');
+}
+setKakaoMessagePlaceholder();
 
 // 문의 전송
 function appendKakaoMessage(sender, text, type) {
@@ -7079,6 +7083,7 @@ async function getKakaoUid() {
   return data.uid || '';
 }
 
+// 문의 전송 시 메시지 박스 활성화 및 안내문구 제거
 sendKakaoChatBtn.onclick = async function() {
   const name = kakaoNameInput.value.trim();
   const email = getEmailValue();
@@ -7091,6 +7096,7 @@ sendKakaoChatBtn.onclick = async function() {
   info.push(`문의: ${text}`);
   const msg = info.join('\n');
   kakaoChatMessages.classList.remove('disabled');
+  kakaoChatMessages.innerHTML = '';
   appendKakaoMessage('나', msg);
   kakaoChatInput.value = '';
   appendKakaoMessage('카카오', '<span style="color:#94a3b8">전송중...</span>');
