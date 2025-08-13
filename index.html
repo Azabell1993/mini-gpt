@@ -6760,8 +6760,110 @@ int main() {
   </footer>
 </main>
 
+<!-- 카카오톡 문의 챗봇 UI (왼쪽 하단 고정) -->
+<div id="kakao-chatbot-container" style="position:fixed; left:24px; bottom:24px; z-index:9999; max-width:340px;">
+  <div id="kakao-chatbot-box" style="background:#fff; border-radius:16px; box-shadow:0 4px 24px #0002; padding:18px 14px 12px 14px;">
+    <div style="font-weight:700; font-size:1.1em; color:#3b1e1e; margin-bottom:8px;">카카오톡 문의</div>
+    <div id="kakao-chat-messages" style="height:140px; overflow-y:auto; background:#f8fafc; border-radius:8px; padding:8px 6px; font-size:0.98em; margin-bottom:8px;"></div>
+    <div style="display:flex; flex-direction:column; gap:6px; margin-bottom:4px;">
+      <input id="kakao-name-input" type="text" placeholder="이름 (필수)" style="border-radius:6px; border:1px solid #cbd5e1; padding:6px 8px; font-size:1em;" />
+      <input id="kakao-email-input" type="email" placeholder="이메일 (선택)" style="border-radius:6px; border:1px solid #cbd5e1; padding:6px 8px; font-size:1em;" />
+      <input id="kakao-phone-input" type="tel" placeholder="핸드폰 번호 (선택)" style="border-radius:6px; border:1px solid #cbd5e1; padding:6px 8px; font-size:1em;" />
+      <input id="kakao-chat-input" type="text" placeholder="문의 내용을 입력하세요..." style="border-radius:6px; border:1px solid #cbd5e1; padding:6px 8px; font-size:1em;" />
+    </div>
+    <button id="send-kakao-chat" style="width:100%; background:#fee500; color:#191600; border:none; border-radius:6px; padding:8px 0; font-weight:600; cursor:pointer;">문의</button>
+    <div style="font-size:0.92em; color:#64748b; margin-top:4px;">이름은 필수, 이메일/핸드폰 중 하나는 반드시 입력해야 합니다.</div>
+  </div>
+</div>
+
 <!-- JavaScript for interactive features -->
 <script src="scripts.js"></script>
+<script>
+// 카카오톡 문의 챗봇 JS (왼쪽 하단)
+const kakaoChatMessages = document.getElementById('kakao-chat-messages');
+const kakaoNameInput = document.getElementById('kakao-name-input');
+const kakaoEmailInput = document.getElementById('kakao-email-input');
+const kakaoPhoneInput = document.getElementById('kakao-phone-input');
+const kakaoChatInput = document.getElementById('kakao-chat-input');
+const sendKakaoChatBtn = document.getElementById('send-kakao-chat');
+
+// .env.local에서 uid(예: KAKAO_APP_KEY) 값을 받아오는 함수 (백엔드에서 노출 API 필요)
+async function getKakaoUid() {
+  // 보안을 위해 실제 서비스에서는 서버에서 안전하게 uid를 전달해야 함
+  // 예시: /api/kakao_uid.php에서 uid만 반환하도록 구현
+  const res = await fetch('api/kakao_uid.php');
+  if (!res.ok) return '';
+  const data = await res.json();
+  return data.uid || '';
+}
+
+function appendKakaoMessage(sender, text) {
+  const msg = document.createElement('div');
+  msg.style.margin = '4px 0';
+  msg.innerHTML = `<b style='color:${sender==="나"?"#191600":"#3b1e1e"}'>${sender}:</b> <span>${text.replace(/\n/g, '<br>')}</span>`;
+  kakaoChatMessages.appendChild(msg);
+  kakaoChatMessages.scrollTop = kakaoChatMessages.scrollHeight;
+}
+
+sendKakaoChatBtn.onclick = async function() {
+  const name = kakaoNameInput.value.trim();
+  const email = kakaoEmailInput.value.trim();
+  const phone = kakaoPhoneInput.value.trim();
+  const text = kakaoChatInput.value.trim();
+  if (!name) {
+    appendKakaoMessage('알림', '이름을 입력하세요.');
+    kakaoNameInput.focus();
+    return;
+  }
+  if (!email && !phone) {
+    appendKakaoMessage('알림', '이메일 또는 핸드폰 번호 중 하나는 입력해야 합니다.');
+    kakaoEmailInput.focus();
+    return;
+  }
+  if (!text) {
+    appendKakaoMessage('알림', '문의 내용을 입력하세요.');
+    kakaoChatInput.focus();
+    return;
+  }
+  const info = [];
+  info.push(`이름: ${name}`);
+  if (email) info.push(`이메일: ${email}`);
+  if (phone) info.push(`핸드폰: ${phone}`);
+  info.push(`문의: ${text}`);
+  const msg = info.join('\n');
+  appendKakaoMessage('나', msg);
+  kakaoChatInput.value = '';
+  appendKakaoMessage('카카오', '<span style="color:#94a3b8">전송중...</span>');
+  const uid = await getKakaoUid();
+  if (!uid) {
+    kakaoChatMessages.lastChild.innerHTML = `<b style='color:#3b1e1e'>카카오:</b> <span>uid를 불러올 수 없습니다.</span>`;
+    return;
+  }
+  const res = await fetch(`api/kakao_chat.php?uid=${uid}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ name, email, phone, message: text })
+  });
+  kakaoChatMessages.lastChild.innerHTML = `<b style='color:#3b1e1e'>카카오:</b> <span style='color:#94a3b8'>전송중...</span>`;
+  const data = await res.json();
+  kakaoChatMessages.lastChild.innerHTML = `<b style='color:#3b1e1e'>카카오:</b> <span>${data.result==='success' ? '문의가 완료되었습니다.' : (data.error || data.msg || '전송 실패')}</span>`;
+  kakaoChatMessages.scrollTop = kakaoChatMessages.scrollHeight;
+};
+
+// 엔터키로 전송
+kakaoChatInput.addEventListener('keydown', function(e) {
+  if (e.key === 'Enter') sendKakaoChatBtn.click();
+});
+kakaoNameInput.addEventListener('keydown', function(e) {
+  if (e.key === 'Enter') kakaoEmailInput.focus();
+});
+kakaoEmailInput.addEventListener('keydown', function(e) {
+  if (e.key === 'Enter') kakaoPhoneInput.focus();
+});
+kakaoPhoneInput.addEventListener('keydown', function(e) {
+  if (e.key === 'Enter') kakaoChatInput.focus();
+});
+</script>
 
 <!-- MathJax for mathematical equations -->
 <script type="text/javascript" async

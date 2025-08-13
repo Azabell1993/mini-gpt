@@ -4,7 +4,7 @@ back/build/
 .env.gpu
 .env.test
 .env.deploy
-
+api/tokens/
 deploy.sh
 start.sh
 build.sh
@@ -19,4 +19,3 @@ build.sh
 
 // Makefile cache
 Makefile.cache
-
