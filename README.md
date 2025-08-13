@@ -31,12 +31,13 @@ mini-gpt/
 │   ├── advanced_tensor.cpp
 │   └── ... (모델별 헤더/소스)
 ├── index.html  
-├── api/                 # API 프록시(PHP)
-│   └── attention.php
-|   ├── flash_attention.php
-|   ├── generate.php
-|   ├── config.php
-|   └── health.php
+├── api/                 # API 프록시(PHP, 문의/챗봇/프록시/헬스체크 등)
+│   ├── config.php           # 환경변수/설정 정보
+│   ├── kakao_chat.php       # 카카오톡 문의 전송 및 DB 저장
+│   ├── kakao_uid.php        # 카카오톡 REST API 키 반환
+│   ├── inquiry_db.php       # 문의 DB 저장/딜레이/IP 추적
+│   ├── mysql.php            # DB 접속 정보
+│   └── tokens/              # 카카오톡 API 토큰 파일
 ├── third_party/         # 외부 라이브러리(Crow 등)
 ├── README.md
 └── ...
@@ -89,5 +90,3 @@ make
 - MIT License (오픈소스, 자유 사용/수정/배포 가능)
 
 ---
-
-문의/기여/이슈는 [깃허브 저장소](https://github.com/Azabell1993/mini-gpt)에서 환영합니다!
