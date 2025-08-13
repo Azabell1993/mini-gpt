@@ -6760,32 +6760,142 @@ int main() {
   </footer>
 </main>
 
-<!-- 카카오톡 문의 챗봇 UI (왼쪽 하단 고정) -->
-<div id="kakao-chatbot-container" style="position:fixed; left:24px; bottom:24px; z-index:9999; max-width:340px;">
-  <div id="kakao-chatbot-box" style="background:#fff; border-radius:16px; box-shadow:0 4px 24px #0002; padding:18px 14px 12px 14px;">
-    <div style="font-weight:700; font-size:1.1em; color:#3b1e1e; margin-bottom:8px;">카카오톡 문의</div>
-    <div id="kakao-chat-messages" style="height:140px; overflow-y:auto; background:#f8fafc; border-radius:8px; padding:8px 6px; font-size:0.98em; margin-bottom:8px;"></div>
-    <div style="display:flex; flex-direction:column; gap:6px; margin-bottom:4px;">
-      <input id="kakao-name-input" type="text" placeholder="이름 (필수)" style="border-radius:6px; border:1px solid #cbd5e1; padding:6px 8px; font-size:1em;" />
-      <input id="kakao-email-input" type="email" placeholder="이메일 (선택)" style="border-radius:6px; border:1px solid #cbd5e1; padding:6px 8px; font-size:1em;" />
-      <input id="kakao-phone-input" type="tel" placeholder="핸드폰 번호 (선택)" style="border-radius:6px; border:1px solid #cbd5e1; padding:6px 8px; font-size:1em;" />
-      <input id="kakao-chat-input" type="text" placeholder="문의 내용을 입력하세요..." style="border-radius:6px; border:1px solid #cbd5e1; padding:6px 8px; font-size:1em;" />
+<style>
+  .kakao-inquiry-draggable {
+    position: fixed;
+    left: 40px;
+    bottom: 40px;
+    z-index: 9999;
+    width: 370px;
+    max-width: 95vw;
+    background: #fff;
+    border-radius: 18px;
+    box-shadow: 0 8px 32px #3b1e1e22;
+    transition: box-shadow 0.2s, transform 0.2s;
+    user-select: none;
+  }
+  .kakao-inquiry-header {
+    cursor: move;
+    padding: 12px 18px 8px 18px;
+    font-weight: 800;
+    font-size: 1.18em;
+    color: #3b1e1e;
+    background: #f8fafc;
+    border-radius: 18px 18px 0 0;
+    border-bottom: 1px solid #f1f5f9;
+  }
+  .kakao-inquiry-content {
+    padding: 18px;
+  }
+  .kakao-inquiry-messages {
+    min-height: 90px;
+    max-height: 180px;
+    overflow-y: auto;
+    background: #f6f8fa;
+    border-radius: 8px;
+    margin-bottom: 12px;
+    padding: 12px 10px;
+    font-size: 1.01em;
+    color: #222;
+    transition: background 0.2s;
+  }
+  .kakao-inquiry-messages.disabled {
+    background: #f6f8fa;
+    color: #cbd5e1;
+  }
+  .kakao-inquiry-inputs input {
+    width: 100%;
+    margin-bottom: 8px;
+    padding: 10px 12px;
+    border-radius: 7px;
+    border: 1px solid #e2e8f0;
+    font-size: 1em;
+    background: #f8fafc;
+    transition: border 0.18s;
+  }
+  .kakao-inquiry-inputs input:focus {
+    border-color: #2563eb;
+    background: #fff;
+  }
+  .kakao-inquiry-btn {
+    width: 100%;
+    padding: 12px 0;
+    background: #ffe066;
+    color: #3b1e1e;
+    font-weight: 700;
+    border: none;
+    border-radius: 7px;
+    font-size: 1.08em;
+    margin-top: 6px;
+    cursor: pointer;
+    transition: background 0.18s;
+  }
+  .kakao-inquiry-btn:disabled {
+    background: #f1f5f9;
+    color: #cbd5e1;
+    cursor: not-allowed;
+  }
+  .kakao-inquiry-desc {
+    font-size: 0.97em;
+    color: #64748b;
+    margin-top: 8px;
+    text-align: left;
+  }
+</style>
+
+<div class="kakao-inquiry-draggable" id="kakaoInquiryBox">
+  <div class="kakao-inquiry-header" id="kakaoInquiryHeader">카카오톡 문의</div>
+  <div class="kakao-inquiry-content">
+    <div class="kakao-inquiry-messages disabled" id="kakaoChatMessages"></div>
+    <div class="kakao-inquiry-inputs">
+      <input type="text" id="kakaoNameInput" placeholder="이름 (필수)" autocomplete="off" />
+      <input type="email" id="kakaoEmailInput" placeholder="이메일 (선택)" autocomplete="off" />
+      <input type="text" id="kakaoPhoneInput" placeholder="핸드폰 번호 (선택)" autocomplete="off" maxlength="13" />
+      <input type="text" id="kakaoChatInput" placeholder="문의 내용을 입력하세요..." autocomplete="off" />
+      <button class="kakao-inquiry-btn" id="sendKakaoChatBtn" disabled>문의</button>
     </div>
-    <button id="send-kakao-chat" style="width:100%; background:#fee500; color:#191600; border:none; border-radius:6px; padding:8px 0; font-weight:600; cursor:pointer;">문의</button>
-    <div style="font-size:0.92em; color:#64748b; margin-top:4px;">이름은 필수, 이메일/핸드폰 중 하나는 반드시 입력해야 합니다.</div>
+    <div class="kakao-inquiry-desc">이름은 필수, 이메일/핸드폰 중 하나는 반드시 입력해야 합니다.</div>
   </div>
 </div>
 
 <!-- JavaScript for interactive features -->
 <script src="scripts.js"></script>
 <script>
-// 카카오톡 문의 챗봇 JS (왼쪽 하단)
-const kakaoChatMessages = document.getElementById('kakao-chat-messages');
-const kakaoNameInput = document.getElementById('kakao-name-input');
-const kakaoEmailInput = document.getElementById('kakao-email-input');
-const kakaoPhoneInput = document.getElementById('kakao-phone-input');
-const kakaoChatInput = document.getElementById('kakao-chat-input');
-const sendKakaoChatBtn = document.getElementById('send-kakao-chat');
+// 문의 입력 활성화/비활성화
+const kakaoNameInput = document.getElementById('kakaoNameInput');
+const kakaoEmailInput = document.getElementById('kakaoEmailInput');
+const kakaoPhoneInput = document.getElementById('kakaoPhoneInput');
+const kakaoChatInput = document.getElementById('kakaoChatInput');
+const sendKakaoChatBtn = document.getElementById('sendKakaoChatBtn');
+const kakaoChatMessages = document.getElementById('kakaoChatMessages');
+
+function validateKakaoInputs() {
+  const name = kakaoNameInput.value.trim();
+  const email = kakaoEmailInput.value.trim();
+  const phone = kakaoPhoneInput.value.trim();
+  const text = kakaoChatInput.value.trim();
+  sendKakaoChatBtn.disabled = !(name && (email || phone) && text);
+}
+
+kakaoNameInput.addEventListener('input', validateKakaoInputs);
+kakaoEmailInput.addEventListener('input', validateKakaoInputs);
+kakaoPhoneInput.addEventListener('input', validateKakaoInputs);
+kakaoChatInput.addEventListener('input', validateKakaoInputs);
+
+// 핸드폰 번호 자동 하이픈
+kakaoPhoneInput.addEventListener('input', function(e) {
+  let val = kakaoPhoneInput.value.replace(/[^0-9]/g, '');
+  if (val.length < 4) {
+    kakaoPhoneInput.value = val;
+  } else if (val.length < 8) {
+    kakaoPhoneInput.value = val.replace(/(\d{3})(\d{1,4})/, '$1-$2');
+  } else {
+    kakaoPhoneInput.value = val.replace(/(\d{3})(\d{4})(\d{1,4})/, '$1-$2-$3');
+  }
+});
+
+// 메시지 박스 초기 비활성화
+kakaoChatMessages.classList.add('disabled');
 
 // .env.local에서 uid(예: KAKAO_APP_KEY) 값을 받아오는 함수 (백엔드에서 노출 API 필요)
 async function getKakaoUid() {
@@ -6810,27 +6920,13 @@ sendKakaoChatBtn.onclick = async function() {
   const email = kakaoEmailInput.value.trim();
   const phone = kakaoPhoneInput.value.trim();
   const text = kakaoChatInput.value.trim();
-  if (!name) {
-    appendKakaoMessage('알림', '이름을 입력하세요.');
-    kakaoNameInput.focus();
-    return;
-  }
-  if (!email && !phone) {
-    appendKakaoMessage('알림', '이메일 또는 핸드폰 번호 중 하나는 입력해야 합니다.');
-    kakaoEmailInput.focus();
-    return;
-  }
-  if (!text) {
-    appendKakaoMessage('알림', '문의 내용을 입력하세요.');
-    kakaoChatInput.focus();
-    return;
-  }
   const info = [];
   info.push(`이름: ${name}`);
   if (email) info.push(`이메일: ${email}`);
   if (phone) info.push(`핸드폰: ${phone}`);
   info.push(`문의: ${text}`);
   const msg = info.join('\n');
+  kakaoChatMessages.classList.remove('disabled');
   appendKakaoMessage('나', msg);
   kakaoChatInput.value = '';
   appendKakaoMessage('카카오', '<span style="color:#94a3b8">전송중...</span>');
@@ -6862,6 +6958,33 @@ kakaoEmailInput.addEventListener('keydown', function(e) {
 });
 kakaoPhoneInput.addEventListener('keydown', function(e) {
   if (e.key === 'Enter') kakaoChatInput.focus();
+});
+
+// 문의 창 드래그 이동
+const kakaoInquiryBox = document.getElementById('kakaoInquiryBox');
+const kakaoInquiryHeader = document.getElementById('kakaoInquiryHeader');
+let dragOffsetX = 0, dragOffsetY = 0, dragging = false;
+kakaoInquiryHeader.addEventListener('mousedown', function(e) {
+  dragging = true;
+  const rect = kakaoInquiryBox.getBoundingClientRect();
+  dragOffsetX = e.clientX - rect.left;
+  dragOffsetY = e.clientY - rect.top;
+  kakaoInquiryBox.style.transition = 'none';
+});
+document.addEventListener('mousemove', function(e) {
+  if (dragging) {
+    let x = e.clientX - dragOffsetX;
+    let y = e.clientY - dragOffsetY;
+    x = Math.max(0, Math.min(window.innerWidth - kakaoInquiryBox.offsetWidth, x));
+    y = Math.max(0, Math.min(window.innerHeight - kakaoInquiryBox.offsetHeight, y));
+    kakaoInquiryBox.style.left = x + 'px';
+    kakaoInquiryBox.style.top = y + 'px';
+    kakaoInquiryBox.style.bottom = 'auto';
+  }
+});
+document.addEventListener('mouseup', function() {
+  dragging = false;
+  kakaoInquiryBox.style.transition = '';
 });
 </script>
 
