@@ -1,4 +1,22 @@
 .vscode/
 back/build/
 .env.local
+.env.gpu
+.env.test
+.env.deploy
+
 deploy.sh
+start.sh
+build.sh
+
+// C언어 바이너리
+*.so
+*.o
+*.a
+
+// C++언어 바이너리
+*.out
+
+// Makefile cache
+Makefile.cache
+
