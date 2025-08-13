@@ -62,10 +62,6 @@ make
 - `.env.local`에 `OPENAI_API_KEY=sk-...` 추가
 - PHP 서버에서 `api/chatgpt.php`가 동작해야 함
 
-### 웹 문서/데모
-
-- `web/index.html`을 브라우저에서 열면 수식, 코드, 챗봇 데모 등 확인 가능
-
 ## REST API 예시
 
 - `GET /api/health` : 서버 상태 확인
@@ -89,4 +85,5 @@ make
 
 - MIT License (오픈소스, 자유 사용/수정/배포 가능)
 
----
+## 정리 홈페이지
+https://minigpt.dothome.co.kr
