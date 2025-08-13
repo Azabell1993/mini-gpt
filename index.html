@@ -6774,6 +6774,15 @@ int main() {
     transition: box-shadow 0.2s, transform 0.2s;
     user-select: none;
   }
+  @media (max-width: 600px) {
+    .kakao-inquiry-draggable {
+      left: 0 !important;
+      bottom: 0 !important;
+      width: 100vw;
+      border-radius: 0;
+      max-width: 100vw;
+    }
+  }
   .kakao-inquiry-header {
     cursor: move;
     padding: 12px 18px 8px 18px;
@@ -6783,6 +6792,25 @@ int main() {
     background: #f8fafc;
     border-radius: 18px 18px 0 0;
     border-bottom: 1px solid #f1f5f9;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .kakao-inquiry-header-btns {
+    display: flex;
+    gap: 8px;
+  }
+  .kakao-inquiry-header-btn {
+    background: none;
+    border: none;
+    font-size: 1.2em;
+    color: #64748b;
+    cursor: pointer;
+    padding: 0 4px;
+    transition: color 0.18s;
+  }
+  .kakao-inquiry-header-btn:hover {
+    color: #2563eb;
   }
   .kakao-inquiry-content {
     padding: 18px;
@@ -6802,6 +6830,35 @@ int main() {
   .kakao-inquiry-messages.disabled {
     background: #f6f8fa;
     color: #cbd5e1;
+  }
+  .kakao-inquiry-messages .msg-time {
+    font-size: 0.85em;
+    color: #94a3b8;
+    margin-left: 6px;
+  }
+  .kakao-inquiry-messages .msg-success {
+    color: #22c55e;
+    font-weight: 700;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    animation: fadeIn 0.7s;
+  }
+  @keyframes fadeIn {
+    from { opacity: 0; transform: scale(0.9); }
+    to { opacity: 1; transform: scale(1); }
+  }
+  .kakao-inquiry-messages .msg-error {
+    color: #ef4444;
+    font-weight: 700;
+    animation: shake 0.4s;
+  }
+  @keyframes shake {
+    0% { transform: translateX(0); }
+    25% { transform: translateX(-4px); }
+    50% { transform: translateX(4px); }
+    75% { transform: translateX(-4px); }
+    100% { transform: translateX(0); }
   }
   .kakao-inquiry-inputs input {
     width: 100%;
@@ -6841,11 +6898,34 @@ int main() {
     margin-top: 8px;
     text-align: left;
   }
+  .kakao-inquiry-download {
+    margin-top: 8px;
+    text-align: right;
+  }
+  .kakao-inquiry-download-btn {
+    background: #2563eb;
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    padding: 6px 14px;
+    font-size: 0.97em;
+    cursor: pointer;
+    transition: background 0.18s;
+  }
+  .kakao-inquiry-download-btn:hover {
+    background: #1d4ed8;
+  }
 </style>
 
 <div class="kakao-inquiry-draggable" id="kakaoInquiryBox">
-  <div class="kakao-inquiry-header" id="kakaoInquiryHeader">카카오톡 문의</div>
-  <div class="kakao-inquiry-content">
+  <div class="kakao-inquiry-header" id="kakaoInquiryHeader">
+    카카오톡 문의
+    <div class="kakao-inquiry-header-btns">
+      <button class="kakao-inquiry-header-btn" id="minimizeKakaoInquiry" title="최소화">&#8211;</button>
+      <button class="kakao-inquiry-header-btn" id="closeKakaoInquiry" title="닫기">&times;</button>
+    </div>
+  </div>
+  <div class="kakao-inquiry-content" id="kakaoInquiryContent">
     <div class="kakao-inquiry-messages disabled" id="kakaoChatMessages"></div>
     <div class="kakao-inquiry-inputs">
       <input type="text" id="kakaoNameInput" placeholder="이름 (필수)" autocomplete="off" />
@@ -6855,6 +6935,7 @@ int main() {
       <button class="kakao-inquiry-btn" id="sendKakaoChatBtn" disabled>문의</button>
     </div>
     <div class="kakao-inquiry-desc">이름은 필수, 이메일/핸드폰 중 하나는 반드시 입력해야 합니다.</div>
+    <div class="kakao-inquiry-download"><button class="kakao-inquiry-download-btn" id="downloadKakaoInquiry">문의내역 다운로드</button></div>
   </div>
 </div>
 
@@ -6868,13 +6949,23 @@ const kakaoPhoneInput = document.getElementById('kakaoPhoneInput');
 const kakaoChatInput = document.getElementById('kakaoChatInput');
 const sendKakaoChatBtn = document.getElementById('sendKakaoChatBtn');
 const kakaoChatMessages = document.getElementById('kakaoChatMessages');
+const kakaoInquiryBox = document.getElementById('kakaoInquiryBox');
+const kakaoInquiryHeader = document.getElementById('kakaoInquiryHeader');
+const kakaoInquiryContent = document.getElementById('kakaoInquiryContent');
+const minimizeBtn = document.getElementById('minimizeKakaoInquiry');
+const closeBtn = document.getElementById('closeKakaoInquiry');
+const downloadBtn = document.getElementById('downloadKakaoInquiry');
 
 function validateKakaoInputs() {
   const name = kakaoNameInput.value.trim();
   const email = kakaoEmailInput.value.trim();
   const phone = kakaoPhoneInput.value.trim();
   const text = kakaoChatInput.value.trim();
-  sendKakaoChatBtn.disabled = !(name && (email || phone) && text);
+  let validEmail = !email || /^[\w.-]+@[\w.-]+\.[A-Za-z]{2,}$/.test(email);
+  let validPhone = !phone || /^01[016789]-\d{3,4}-\d{4}$/.test(phone);
+  sendKakaoChatBtn.disabled = !(name && (email || phone) && text && validEmail && validPhone);
+  kakaoEmailInput.style.borderColor = validEmail ? '' : '#ef4444';
+  kakaoPhoneInput.style.borderColor = validPhone ? '' : '#ef4444';
 }
 
 kakaoNameInput.addEventListener('input', validateKakaoInputs);
@@ -6897,6 +6988,21 @@ kakaoPhoneInput.addEventListener('input', function(e) {
 // 메시지 박스 초기 비활성화
 kakaoChatMessages.classList.add('disabled');
 
+// 문의 전송
+function appendKakaoMessage(sender, text, type) {
+  const msg = document.createElement('div');
+  msg.style.margin = '4px 0';
+  const now = new Date();
+  const time = `<span class='msg-time'>${now.getHours().toString().padStart(2,'0')}:${now.getMinutes().toString().padStart(2,'0')}</span>`;
+  let extra = '';
+  if (type === 'success') extra = "<span class='msg-success'>&#10003; 문의가 완료되었습니다.</span>";
+  if (type === 'error') extra = `<span class='msg-error'>${text}</span>`;
+  else msg.innerHTML = `<b style='color:${sender==="나"?"#191600":"#3b1e1e"}'>${sender}:</b> <span>${text.replace(/\n/g, '<br>')}</span> ${time}`;
+  if (type === 'success' || type === 'error') msg.innerHTML = extra + ' ' + time;
+  kakaoChatMessages.appendChild(msg);
+  kakaoChatMessages.scrollTop = kakaoChatMessages.scrollHeight;
+}
+
 // .env.local에서 uid(예: KAKAO_APP_KEY) 값을 받아오는 함수 (백엔드에서 노출 API 필요)
 async function getKakaoUid() {
   // 보안을 위해 실제 서비스에서는 서버에서 안전하게 uid를 전달해야 함
@@ -6905,14 +7011,6 @@ async function getKakaoUid() {
   if (!res.ok) return '';
   const data = await res.json();
   return data.uid || '';
-}
-
-function appendKakaoMessage(sender, text) {
-  const msg = document.createElement('div');
-  msg.style.margin = '4px 0';
-  msg.innerHTML = `<b style='color:${sender==="나"?"#191600":"#3b1e1e"}'>${sender}:</b> <span>${text.replace(/\n/g, '<br>')}</span>`;
-  kakaoChatMessages.appendChild(msg);
-  kakaoChatMessages.scrollTop = kakaoChatMessages.scrollHeight;
 }
 
 sendKakaoChatBtn.onclick = async function() {
@@ -6932,7 +7030,7 @@ sendKakaoChatBtn.onclick = async function() {
   appendKakaoMessage('카카오', '<span style="color:#94a3b8">전송중...</span>');
   const uid = await getKakaoUid();
   if (!uid) {
-    kakaoChatMessages.lastChild.innerHTML = `<b style='color:#3b1e1e'>카카오:</b> <span>uid를 불러올 수 없습니다.</span>`;
+    appendKakaoMessage('카카오', 'uid를 불러올 수 없습니다.', 'error');
     return;
   }
   const res = await fetch(`api/kakao_chat.php?uid=${uid}`, {
@@ -6940,9 +7038,18 @@ sendKakaoChatBtn.onclick = async function() {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ name, email, phone, message: text })
   });
-  kakaoChatMessages.lastChild.innerHTML = `<b style='color:#3b1e1e'>카카오:</b> <span style='color:#94a3b8'>전송중...</span>`;
   const data = await res.json();
-  kakaoChatMessages.lastChild.innerHTML = `<b style='color:#3b1e1e'>카카오:</b> <span>${data.result==='success' ? '문의가 완료되었습니다.' : (data.error || data.msg || '전송 실패')}</span>`;
+  if (data.result === 'success') {
+    appendKakaoMessage('카카오', '', 'success');
+    kakaoNameInput.value = '';
+    kakaoEmailInput.value = '';
+    kakaoPhoneInput.value = '';
+    kakaoChatInput.value = '';
+    sendKakaoChatBtn.disabled = true;
+    kakaoNameInput.focus();
+  } else {
+    appendKakaoMessage('카카오', data.error || data.msg || '전송 실패', 'error');
+  }
   kakaoChatMessages.scrollTop = kakaoChatMessages.scrollHeight;
 };
 
@@ -6960,9 +7067,7 @@ kakaoPhoneInput.addEventListener('keydown', function(e) {
   if (e.key === 'Enter') kakaoChatInput.focus();
 });
 
-// 문의 창 드래그 이동
-const kakaoInquiryBox = document.getElementById('kakaoInquiryBox');
-const kakaoInquiryHeader = document.getElementById('kakaoInquiryHeader');
+// 문의 창 드래그 이동 및 위치 기억
 let dragOffsetX = 0, dragOffsetY = 0, dragging = false;
 kakaoInquiryHeader.addEventListener('mousedown', function(e) {
   dragging = true;
@@ -6980,12 +7085,57 @@ document.addEventListener('mousemove', function(e) {
     kakaoInquiryBox.style.left = x + 'px';
     kakaoInquiryBox.style.top = y + 'px';
     kakaoInquiryBox.style.bottom = 'auto';
+    localStorage.setItem('kakaoInquiryPos', JSON.stringify({x, y}));
   }
 });
 document.addEventListener('mouseup', function() {
   dragging = false;
   kakaoInquiryBox.style.transition = '';
 });
+// 창 위치 복원
+(function(){
+  const pos = localStorage.getItem('kakaoInquiryPos');
+  if (pos) {
+    try {
+      const {x, y} = JSON.parse(pos);
+      kakaoInquiryBox.style.left = x + 'px';
+      kakaoInquiryBox.style.top = y + 'px';
+      kakaoInquiryBox.style.bottom = 'auto';
+    } catch(e){}
+  }
+})();
+// 최소화/복원
+minimizeBtn.onclick = function() {
+  if (kakaoInquiryContent.style.display !== 'none') {
+    kakaoInquiryContent.style.display = 'none';
+    minimizeBtn.innerHTML = '&#x25A1;';
+  } else {
+    kakaoInquiryContent.style.display = '';
+    minimizeBtn.innerHTML = '&#8211;';
+  }
+};
+// 닫기
+closeBtn.onclick = function() {
+  kakaoInquiryBox.style.display = 'none';
+};
+// 문의내역 다운로드
+function getKakaoInquiryLog() {
+  let log = '';
+  kakaoChatMessages.querySelectorAll('div').forEach(div => {
+    log += div.textContent + '\n';
+  });
+  return log.trim();
+}
+downloadBtn.onclick = function() {
+  const log = getKakaoInquiryLog();
+  const blob = new Blob([log], {type:'text/plain'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'kakao_inquiry_log.txt';
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(()=>{document.body.removeChild(a);}, 500);
+};
 </script>
 
 <!-- MathJax for mathematical equations -->
