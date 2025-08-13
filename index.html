@@ -280,7 +280,7 @@ public:
         \[E \in \mathbb{R}^{V \times d}\]
         <div class="formula-explanation">
           <p><strong>초기화:</strong> \(E_{i,j} \sim \mathcal{N}(0, \sigma_e^2)\) where \(\sigma_e = 0.02\)</p>
-          <p><strong>학습 가능:</strong> 역전파를 통해 업데이트됨</p>
+          <p><strong>학습 가능:</strong> 역전파로 기울기를 계산하고, 옵티마이저를 통해 파라미터가 갱신됨</p>
         </div>
 
         <p><strong>위치 임베딩 행렬:</strong></p>
