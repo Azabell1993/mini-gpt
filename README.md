@@ -22,25 +22,36 @@
   - \(H=\text{GELU}(X W_1+b_1);\, Y=H W_2 + b_2\)
 
 ## 폴더 구조
-
 ```
-mini-gpt/
-├── back/                # C++ GPT 핵심 구현 (Crow API 포함)
-│   ├── main.cpp
-│   ├── advanced_gpt.hpp
-│   ├── advanced_tensor.cpp
-│   └── ... (모델별 헤더/소스)
-├── index.html  
-├── api/                 # API 프록시(PHP, 문의/챗봇/프록시/헬스체크 등)
-│   ├── config.php           # 환경변수/설정 정보
-│   ├── kakao_chat.php       # 카카오톡 문의 전송 및 DB 저장
-│   ├── kakao_uid.php        # 카카오톡 REST API 키 반환
-│   ├── inquiry_db.php       # 문의 DB 저장/딜레이/IP 추적
-│   ├── mysql.php            # DB 접속 정보
-│   └── tokens/              # 카카오톡 API 토큰 파일
-├── third_party/         # 외부 라이브러리(Crow 등)
-├── README.md
-└── ...
+$ tree -I third_party
+.
+├── back                        # C++ 백엔드 서버 및 GPT 모델 구현 폴더
+│   ├── advanced_gpt.hpp        # GPT 모델 핵심 헤더 파일
+│   ├── advanced_tensor.cpp     # 텐서 연산 구현 소스 파일
+│   ├── CMakeLists.txt          # CMake 빌드 설정 파일
+│   ├── include                 # 헤더 파일 모음 폴더
+│   │   └── model               # 모델 관련 헤더 파일 폴더
+│   │       ├── advanced_transformer.hpp # 고급 Transformer 구현 헤더
+│   │       ├── attention.hpp   # Self-Attention 구현 헤더
+│   │       ├── ffn.hpp         # FFN(GELU) 구현 헤더
+│   │       ├── layernorm.hpp   # LayerNorm 구현 헤더
+│   │       ├── tensor.hpp      # 텐서 자료구조 헤더
+│   │       └── transformer.hpp # 기본 Transformer 헤더
+│   └── main.cpp                # Crow 기반 서버 진입점
+├── deploy.sh                   # 배포 자동화 스크립트
+├── diagram.js                  # 모델 구조 시각화 JS 파일
+├── index.html                  # 프로젝트 메인 웹페이지
+├── models                      # 학습된 모델 및 체크포인트 폴더
+├── README.md                   # 프로젝트 설명 문서
+├── scripts.js                  # 웹페이지용 JS 스크립트
+├── styles.css                  # 웹페이지용 CSS 스타일
+├── test_kakao_env.php          # 카카오 환경 테스트용 PHP 스크립트
+└── transformer-viewer          # Transformer 시각화 웹앱 폴더
+  ├── app.js                  # 시각화 앱 JS 파일
+  ├── index.html              # 시각화 앱 웹페이지
+  └── styles.css              # 시각화 앱 CSS 스타일
+
+6 directories, 20 files
 ```
 
 ## 빌드 및 실행
